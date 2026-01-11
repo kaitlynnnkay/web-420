@@ -1,2 +1,3 @@
-# web-420
-Repository for BU Web Dev Course WEB420
+# WEB 420 Restful APIs
+* Richard Krasso
+* Kaitlyn Kelly
