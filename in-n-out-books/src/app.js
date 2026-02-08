@@ -6,6 +6,8 @@ Description: Assignment 3.2 - Building Your Own Web Sever
 */
 
 const express = require('express');
+const books = require("../database/books");
+const createError = require("http-errors");
 
 const app = express(); // step 3: create an express application
 
@@ -113,7 +115,44 @@ app.get("/", async (req, res, next) => {
   </html>
   `; // end html content for landing page
 
+
+
   res.send(html); // sends html content to the client
+});
+
+// get all books from book.js
+app.get("/api/books", async (req, res, next) => {
+  try {
+    const allBooks = await books.find();
+    console.log("All Books: ", allBooks);
+    res.send(allBooks);
+  } catch (err) { // catch and record error, if an error
+    console.error("Error: ", err.message);
+    next(err);
+  }
+});
+
+// get a specific book from books.js
+// error handling for if id in NaN
+app.get("/api/books/:id", async (req, res, next) => {
+  try {
+    let { id } = req.params;
+    id = parseInt(id);
+
+    if (isNaN(id)) {
+      return next(createError(400, "Input must be a number"));
+    }
+
+    const book = await books.findOne({ id: id });
+
+    if (!book) {
+      return next(createError(404, "Book not found"));
+    }
+
+    res.send(book);
+  } catch (err) {
+    next(err);
+  }
 });
 
 // step 5: add middleware function to handle 404 errors
@@ -132,6 +171,7 @@ app.use((req, res, next) => {
     stack: req.app.get('env') === 'development'?err.stack:undefined
   });
  });
+
 
 
 module.exports = app; // step 7: export the express application
