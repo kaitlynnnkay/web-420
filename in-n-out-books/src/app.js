@@ -10,6 +10,7 @@ const books = require("../database/books");
 const createError = require("http-errors");
 
 const app = express(); // step 3: create an express application
+app.use(express.json());
 
 // step 4: add a get route to the root url with a fully designed landing page
 app.get("/", async (req, res, next) => {
@@ -132,6 +133,27 @@ app.get("/api/books", async (req, res, next) => {
   }
 });
 
+app.post("/api/books", async (req, res, next) => {
+  try {
+    const newBook = req.body;
+
+    const expectedKeys = ["id", "title", "author"];
+    const receivedKeys = Object.keys(newBook);
+
+    if(!receivedKeys.every(key => expectedKeys.includes(key)) || receivedKeys.length !== expectedKeys.length){
+      console.error("Bad Request: Missing keys or extra keys", receivedKeys);
+      return next(createError(400, "Bad Request"));
+    }
+
+    const result = await books.insertOne(newBook);
+    console.log("Result: ", result);
+    res.status(201).send(newBook);
+  } catch (err) {
+    console.error("Error: ", err.message);
+    next(err);
+  }
+});
+
 // get a specific book from books.js
 // error handling for if id in NaN
 app.get("/api/books/:id", async (req, res, next) => {
@@ -155,6 +177,21 @@ app.get("/api/books/:id", async (req, res, next) => {
   }
 });
 
+// delete a book with a 204 return, even if no entry deleted
+app.delete("/api/books/:id", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await books.deleteOne({ id: parseInt(id) });
+
+    res.status(204).send();
+  } catch (err) {
+    if (err.message === "No matching item found") {
+      return res.status(204).send();
+  }
+  next(err);
+  }
+});
+
 // step 5: add middleware function to handle 404 errors
 app.use((req, res, next) => {
   res.status(404).send("404 Not Found");
@@ -171,7 +208,6 @@ app.use((req, res, next) => {
     stack: req.app.get('env') === 'development'?err.stack:undefined
   });
  });
-
 
 
 module.exports = app; // step 7: export the express application
