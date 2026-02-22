@@ -192,6 +192,35 @@ app.delete("/api/books/:id", async (req, res, next) => {
   }
 });
 
+// put endpoint
+app.put("/api/books/:id", async (req, res, next) => {
+  try {
+    let { id } = req.params;
+    let book = req.body;
+    id = parseInt(id);
+
+    if (isNaN(id)) {
+      return next(createError(400, "Input must be a number"));
+    }
+
+    if (!book.title) {
+      return next(createError(400, "Bad Request"));
+    }
+
+    const result = await books.updateOne(id, book);
+    console.log("Result: ", result);
+
+    res.status(204).send();
+  } catch (err) {
+    if (err.message === "No matching item found") {
+      console.log("Book not found", err.message)
+      return next(createError(404, "Book not found"));
+    }
+    console.error("Error: ", err.message);
+    next(err);
+  }
+});
+
 // step 5: add middleware function to handle 404 errors
 app.use((req, res, next) => {
   res.status(404).send("404 Not Found");

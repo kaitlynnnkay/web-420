@@ -60,4 +60,14 @@ describe("Hands On 3.1: Tests", () => {
 
     expect(res.statusCode).toEqual(204);
   });
+
+  it("should return a 400 status code when updating a book with a missing a title", async () => {
+    const res = await request(app).put("/api/books/1").send({
+      name: "Test Book"
+    });
+
+    expect(res.statusCode).toEqual(400);
+    expect(res.body.message).toEqual("Bad Request");
+  });
+
 });
