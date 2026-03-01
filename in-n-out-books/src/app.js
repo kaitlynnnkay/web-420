@@ -7,6 +7,8 @@ Description: Assignment 3.2 - Building Your Own Web Sever
 
 const express = require('express');
 const books = require("../database/books");
+const users = require("../database/users");
+const bcrypt = require("bcryptjs");
 const createError = require("http-errors");
 
 const app = express(); // step 3: create an express application
@@ -153,6 +155,40 @@ app.post("/api/books", async (req, res, next) => {
     next(err);
   }
 });
+
+// post route to login a user with a 200-status code & message
+// return an error if email or password are missing
+app.post("/api/login", async (req, res, next) => {
+  try {
+    const {email, password} = req.body;
+
+    if (!email || !password) {
+      return next(createError(400, "Bad Request"));
+    }
+
+    // look up user in database
+    const user = await users.findOne(1);
+
+    // if user doesn't exist, throw an error to prevent program from crashing
+    if (!user) {
+      return next(createError(401, "Unauthorized"));
+    }
+
+    // compare entered password to user's password
+    const validPassword = bcrypt.compareSync(password, user.password);
+
+    // if passwords don't match, throw an error
+    if (!validPassword) {
+      return next(createError(401, "Unauthorized"));
+    }
+
+    // success if no errors
+    res.status(200).json({ message: "Authentication successful" });
+  } catch (err) {
+    next(err);
+  }
+})
+
 
 // get a specific book from books.js
 // error handling for if id in NaN

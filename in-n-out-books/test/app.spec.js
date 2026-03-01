@@ -70,4 +70,48 @@ describe("Hands On 3.1: Tests", () => {
     expect(res.body.message).toEqual("Bad Request");
   });
 
+  it("should log a valid user in and return a 200 status code", async () => {
+    const res = await request(app)
+    .post("/api/login")
+    .send({
+      email: "harry@hogwarts.edu",
+      password: "potter"
+    });
+
+    expect(res.statusCode).toEqual(200);
+    expect(res.body.message).toEqual("Authentication successful");
+  });
+
+  it("should return a 401 status code when logging in with incorrect credentials", async () => {
+    const res = await request(app)
+    .post("/api/login")
+    .send({
+      email: "harry@hogwarts.edu",
+      password: "potters"
+    });
+
+    expect(res.statusCode).toEqual(401);
+    expect(res.body.message).toEqual("Unauthorized");
+  });
+
+  it("should return a 400 status code when missing email or password", async () => {
+    const res1 = await request(app)
+    .post("/api/login")
+    .send({
+      email: "harry@hogwarts.edu",
+    });
+
+    expect(res1.statusCode).toEqual(400);
+    expect(res1.body.message).toEqual("Bad Request");
+
+    const res2 = await request(app)
+    .post("/api/login")
+    .send({
+      password: "potter"
+    });
+
+    expect(res2.statusCode).toEqual(400);
+    expect(res2.body.message).toEqual("Bad Request");
+  })
 });
+
