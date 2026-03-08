@@ -10,9 +10,24 @@ const books = require("../database/books");
 const users = require("../database/users");
 const bcrypt = require("bcryptjs");
 const createError = require("http-errors");
+const Ajv = require("ajv");
+const ajv = new Ajv();
 
 const app = express(); // step 3: create an express application
 app.use(express.json());
+
+// ajv json schema
+const securityQuestionsSchema = {
+  type: "array",
+  items: {
+    type: "object",
+    properties: {
+      answer: { type: "string" }
+    },
+    required: ["answer"],
+    additionalProperties: false
+  }
+};
 
 // step 4: add a get route to the root url with a fully designed landing page
 app.get("/", async (req, res, next) => {
@@ -188,6 +203,46 @@ app.post("/api/login", async (req, res, next) => {
     next(err);
   }
 })
+
+
+// post route to verify a user's security questions
+// returns a 200 status with "security questions successfully answered"
+// if answers do not match, throw a 401 error with "unauthorized"
+app.post("/api/users/:email/verify-security-question", async (req, res, next) => {
+  try {
+    const {email} = req.params;
+    const {securityQuestions} = req.body;
+
+    // check if securityQuestions is valid compared to schema
+    // if not valid, throw an error
+    const validate = ajv.compile(securityQuestionsSchema);
+    const valid = validate(securityQuestions);
+
+    if (!valid) {
+      console.error("Bad Request");
+      return next(createError(400, "Bad Request"));
+    }
+
+    const user = await users.findOne({email: email});
+
+    // if user does not exist, throw an error to prevent crashing
+    if (!user) {
+      return next(createError(401, "Unauthorized"));
+    }
+
+    // checks if security question answers entered match the security questions of the user
+    // throw an error if not
+    if (securityQuestions[0].answer !== user.securityQuestions[0].answer || securityQuestions[1].answer !== user.securityQuestions[1].answer || securityQuestions[2].answer !== user.securityQuestions[2].answer) {
+      console.error("Unauthorized");
+      return next(createError(401, "Unauthorized"));
+    }
+
+    // success if no errors
+    res.status(200).json({ message: "Security questions successfully answered" });
+  } catch (err) {
+    next(err);
+  }
+});
 
 
 // get a specific book from books.js
